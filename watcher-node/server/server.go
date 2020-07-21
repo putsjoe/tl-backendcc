@@ -17,6 +17,8 @@ func FilesHandler(store *filestore.Store) http.HandlerFunc {
 			return
 		}
 
+		w.Header().Set("Content-Type", "application/json")
+
 		filesMeta := []lib.FileMetadata{}
 		list, seqNo := store.GetList()
 		for name, _ := range list {

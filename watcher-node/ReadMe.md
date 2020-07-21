@@ -2,6 +2,18 @@
 
 Store an updated list of the changes which happen in a specified folder, and update an aggregator service with the changes
 
+## Usage
+
+```
+./watcher-node
+  -aggregator <string>
+        the aggregation server address
+  -dir <string>
+        the path of the directory to watch (default "/host/watched-folder")
+  -p <int>
+        the listen port (default 4000)
+```
+
 ## Endpoints
 
 `GET http://localhost:4000/files`
@@ -11,10 +23,10 @@ Response:
 {
     "files" [
         {
-            "name: "file.txt"
+            "filename: "file.txt"
         },
         {
-            "name": "anotherfile.txt"
+            "filename": "anotherfile.txt"
         }
     ]
 }

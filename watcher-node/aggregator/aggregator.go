@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
-	"os"
 
 	"thirdlight.com/watcher-node/lib"
 )
@@ -18,12 +18,11 @@ type Aggregator struct {
 	client  *http.Client
 }
 
-func New(client *http.Client) (*Aggregator, error) {
-	aggregatorAddr := os.Getenv("FILE_AGGREGATOR_ADDRESS")
-	if aggregatorAddr == "" {
-		return nil, errors.New("no aggregator address - set FILE_AGGREGATOR_ADDRESS as an environment variable")
+func New(client *http.Client, addr string) (*Aggregator, error) {
+	if addr == "" {
+		return nil, errors.New("no aggregation server address provided")
 	}
-	urlObj, err := url.Parse(aggregatorAddr)
+	urlObj, err := url.Parse(addr)
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +62,7 @@ func (ag *Aggregator) NotifyUpdate(op string, filename string, seqNo int, instan
 
 func (ag *Aggregator) send(method, path string, body interface{}) error {
 	if ag.baseUrl == nil {
-		return errors.New("No FILE_AGGREGATOR_ADDRESS set")
+		return errors.New("no aggregation server address configured")
 	}
 	u, err := url.Parse(path)
 	if err != nil {
@@ -80,7 +79,7 @@ func (ag *Aggregator) send(method, path string, body interface{}) error {
 		ag.baseUrl.ResolveReference(u).String(),
 		bytes.NewReader(payload),
 	)
-	req.Close = true
+	req.Header.Set("Content-Type", "application/json")
 
 	if err != nil {
 		return err
@@ -88,9 +87,18 @@ func (ag *Aggregator) send(method, path string, body interface{}) error {
 
 	resp, err := ag.client.Do(req)
 	if err != nil {
-		return fmt.Errorf("Aggregator client error: %w", err)
+		return fmt.Errorf("Aggregator client error: %s", err.Error())
 	}
-	resp.Body.Close()
+
+	defer resp.Body.Close()
+	_, bodyErr := ioutil.ReadAll(resp.Body)
+	if bodyErr != nil {
+		return fmt.Errorf("Aggregator client error: %s", bodyErr.Error())
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("Aggregator client non-200 response: %s", resp.Status)
+	}
 
 	return nil
 }

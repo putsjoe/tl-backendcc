@@ -32,9 +32,10 @@ func main() {
 	log.Println("[INFO] Starting watcher node")
 	var directory = flag.String("dir", mountedDir, "the path of the directory to watch")
 	var port = flag.Uint("p", defaultPort, "the port")
+	var aggregationServer = flag.String("aggregator", "", "the aggregation server address")
 	flag.Parse()
 
-	aggregatorClient, err := aggregator.New(&http.Client{})
+	aggregatorClient, err := aggregator.New(&http.Client{}, *aggregationServer)
 	if err != nil {
 		log.Fatalln("[ERROR]", err)
 	}
