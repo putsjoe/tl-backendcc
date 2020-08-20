@@ -6,10 +6,12 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"sync"
 )
 
 type files struct {
 	state map[string][]string
+	mu    sync.Mutex
 }
 
 type byeRequest struct {
@@ -28,11 +30,14 @@ func main() {
 	http.HandleFunc("/hello", nothing)
 	http.HandleFunc("/bye", f.bye)
 	http.HandleFunc("/files", f.files)
+
 	fmt.Println("Serving on port 8000...")
 	http.ListenAndServe(":8000", nil)
 }
 
 func (f *files) remove(instance string, filename string) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
 	if val, ok := f.state[instance]; ok {
 		for i, e := range val {
 			if e == filename {
@@ -44,21 +49,23 @@ func (f *files) remove(instance string, filename string) {
 }
 
 func (f *files) add(instance string, filename string) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
 	if _, ok := f.state[instance]; ok {
 		f.state[instance] = append(f.state[instance], filename)
 	} else {
 		f.state[instance] = []string{filename}
 	}
-	fmt.Println(f.state)
 }
 
 func (f *files) bye(w http.ResponseWriter, r *http.Request) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
 	var req byeRequest
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&req); err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println(req)
 	if _, ok := f.state[req.Instance]; ok {
 		delete(f.state, req.Instance)
 	}
@@ -66,6 +73,8 @@ func (f *files) bye(w http.ResponseWriter, r *http.Request) {
 }
 
 func (f *files) files(w http.ResponseWriter, r *http.Request) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
 	if r.Method == http.MethodGet {
 		var filenames []string
 
@@ -87,14 +96,10 @@ func (f *files) files(w http.ResponseWriter, r *http.Request) {
 		log.Fatal(err)
 	}
 	for _, p := range req {
-		fmt.Println(req)
-		// Too short for case statement?
 		switch p.Operation {
 		case "add":
-			fmt.Println("ADD - ", p.Value["filename"])
 			f.add(p.Instance, p.Value["filename"])
 		case "remove":
-			fmt.Println("DEL - ", p.Value["filename"])
 			f.remove(p.Instance, p.Value["filename"])
 		}
 	}
@@ -123,7 +128,18 @@ func nothing(w http.ResponseWriter, r *http.Request) {
 // Proper JSON response for files GET endpoint
 // remove function - Dont just blank, remove from slice
 // Think about alternative to using a slice?
-// Use sync.Mutex on state?
 // Move to seperate file?
 
 // Endpoints: files GET, files POST, hello, bye
+
+// Notes:
+
+// files function - Too short for switch statement?
+
+/*
+make stop
+pkill -f watcher-node
+2020/08/20 22:33:13 http: Server closed
+2020/08/20 22:33:13 http: Server closed
+joe@joe:~/thirdlight-bcc$ 2020/08/20 22:33:13 [ERROR] <nil>
+*/
