@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"sync"
@@ -103,21 +102,6 @@ func (f *files) files(w http.ResponseWriter, r *http.Request) {
 			f.remove(p.Instance, p.Value["filename"])
 		}
 	}
-}
-
-func print(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.NotFound(w, r)
-	}
-	bodyBytes, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
-	bodyString := string(bodyBytes)
-	fmt.Println(bodyString)
-
-	return
-
 }
 
 // TODO
