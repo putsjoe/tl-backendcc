@@ -14,6 +14,11 @@ type files struct {
 	mu    sync.Mutex
 }
 
+type helloRequest struct {
+	Instance string `json:"instance"`
+	Port     int    `json:"port"`
+}
+
 type byeRequest struct {
 	Instance string `json:"instance"`
 }
@@ -27,7 +32,7 @@ type putRequest struct {
 
 func main() {
 	f := &files{state: make(map[string]map[string]bool)}
-	http.HandleFunc("/hello", nothing)
+	http.HandleFunc("/hello", f.hello)
 	http.HandleFunc("/bye", f.bye)
 	http.HandleFunc("/files", f.files)
 
@@ -45,22 +50,33 @@ func (f *files) remove(instance string, filename string) {
 func (f *files) add(instance string, filename string) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	if _, ok := f.state[instance]; ok {
-		f.state[instance][filename] = true
-	} else {
-		f.state[instance] = make(map[string]bool)
+	f.state[instance][filename] = true
+}
+
+func (f *files) hello(w http.ResponseWriter, r *http.Request) {
+	f.mu.Lock()
+	defer f.mu.Lock()
+
+	var hreq helloRequest
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&hreq); err != nil {
+		log.Fatal(err)
 	}
+	if _, ok := f.state[hreq.Instance]; !ok {
+		f.state[hreq.Instance] = make(map[string]bool)
+	}
+
 }
 
 func (f *files) bye(w http.ResponseWriter, r *http.Request) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	var req byeRequest
+	var breq byeRequest
 	decoder := json.NewDecoder(r.Body)
-	if err := decoder.Decode(&req); err != nil {
+	if err := decoder.Decode(&breq); err != nil {
 		log.Fatal(err)
 	}
-	delete(f.state, req.Instance)
+	delete(f.state, breq.Instance)
 
 }
 
@@ -104,10 +120,6 @@ func print(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func nothing(w http.ResponseWriter, r *http.Request) {
-	return
-}
-
 // TODO
 // Proper JSON response for files GET endpoint
 // Need to check for files currently present when the watcher first says hello
@@ -116,6 +128,7 @@ func nothing(w http.ResponseWriter, r *http.Request) {
 // files output need to be ordered?
 
 /** Questions: **/
+// Overused mutex? RWMutex? Best alternative?
 // files function - Too short for switch statement?
 /*
 // var state = make(map[string]map[string]bool)
