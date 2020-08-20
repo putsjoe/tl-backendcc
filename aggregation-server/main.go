@@ -53,8 +53,6 @@ func (f *files) add(instance string, filename string) {
 }
 
 func (f *files) hello(w http.ResponseWriter, r *http.Request) {
-	f.mu.Lock()
-	defer f.mu.Lock()
 
 	var hreq helloRequest
 	decoder := json.NewDecoder(r.Body)
@@ -67,20 +65,33 @@ func (f *files) hello(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (f *files) bye(w http.ResponseWriter, r *http.Request) {
+func (f *files) removeInstance(instance string) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
+	delete(f.state, instance)
+}
+
+func (f *files) bye(w http.ResponseWriter, r *http.Request) {
 	var breq byeRequest
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&breq); err != nil {
 		log.Fatal(err)
 	}
-	delete(f.state, breq.Instance)
+	f.removeInstance(breq.Instance)
 
 }
 
 func (f *files) files(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
+		// var files = map[string]string{}
+		// for i := range f.state {
+		//      for f := range f.state[i] {
+		//              files[]
+		//              files = append(files, f)
+		//      }
+		// }
+		// fmt.Fprint(w, json.Marshal(files))
+		// fmt.Println(f.state)
 		for i := range f.state {
 			for f := range f.state[i] {
 				fmt.Fprintf(w, f+"\n")
@@ -119,6 +130,9 @@ func (f *files) files(w http.ResponseWriter, r *http.Request) {
 Better to use this syntax or
 // var state = map[string]map[string]bool{}
 */
+/*
+	My own issue on the files.hello function, using the mutex right at the top
+	can just block the whole thing. Probably why I shouldnt be using one.
 /*
 make stop
 pkill -f watcher-node
