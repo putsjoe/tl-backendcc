@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"sync"
 )
 
@@ -56,13 +57,16 @@ func (f *files) add(instance string, filename string) {
 	f.state[instance].filenames[filename] = true
 }
 
-func (f *files) insert(hreq helloRequest) {
+func (f *files) insert(hreq helloRequest) bool {
+	// Return whether or not the instance is new
 	if _, ok := f.state[hreq.Instance]; !ok {
 		f.state[hreq.Instance] = fileDetails{
 			filenames: make(map[string]bool),
 			port:      hreq.Port,
 		}
+		return true
 	}
+	return false
 }
 
 func (f *files) hello(w http.ResponseWriter, r *http.Request) {
@@ -72,8 +76,23 @@ func (f *files) hello(w http.ResponseWriter, r *http.Request) {
 	if err := decoder.Decode(&hreq); err != nil {
 		log.Fatal(err)
 	}
-	f.insert(hreq)
-	// Retrieve current list from server here
+	if !f.insert(hreq) {
+		return
+	}
+	// If new, then return list of current files from server
+	// This shouldnt be hardcoded.
+	location := "http://localhost:" + strconv.Itoa(hreq.Port) + "/files"
+	resp, err := http.Get(location)
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+
+	var result map[string][]map[string]string
+	json.NewDecoder(resp.Body).Decode(&result)
+	for _, r := range result["files"] {
+		f.add(hreq.Instance, r["filename"])
+	}
 
 }
 
@@ -131,22 +150,27 @@ func (f *files) files(w http.ResponseWriter, r *http.Request) {
 }
 
 // TODO
-// Need to check for files currently present when the watcher first says hello?
-// files output need to be ordered? Yes - sorted alphabetically
-// Seperate out?
+// Seperate out
+// Move notes to bottom of readme
+
+/** Improvements **/
+// Sorting of filenames returned
+// hello function more concurrency
+// data races
+// Alternative to mutex
 
 /** Questions: **/
-// prepFiles - better solution and sorting
+// prepFiles - better solution and sorting.
 // files function - Too short for switch statement?
 // Overused mutex? RWMutex? Best alternative?
 /*
-// var state = make(map[string]map[string]bool)
-Better to use this syntax or
-// var state = map[string]map[string]bool{}
+Which is the better syntax:
+  var state = make(map[string]map[string]bool)
+  var state = map[string]map[string]bool{}
 */
 /*
-	My own issue on the files.hello function, using the mutex right at the top
-	can just block the whole thing. Probably why I shouldnt be using one.
+	Using the mutex right at the top can just block the whole thing on a http
+	handler function.
 /*
 make stop
 pkill -f watcher-node
