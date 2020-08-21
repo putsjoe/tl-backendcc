@@ -30,7 +30,7 @@ func (f *Files) add(instance string, filename string) {
 	f.State[instance].Filenames[filename] = true
 }
 
-func (f *Files) insert(hreq helloRequest) bool {
+func (f *Files) insert(hreq HelloRequest) bool {
 	if _, ok := f.State[hreq.Instance]; !ok {
 		f.State[hreq.Instance] = FileDetails{
 			Filenames: make(map[string]bool),
@@ -64,7 +64,7 @@ func (f *Files) prepFiles() []byte {
 
 func (f *Files) Hello(w http.ResponseWriter, r *http.Request) {
 
-	var hreq helloRequest
+	var hreq HelloRequest
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&hreq); err != nil {
 		log.Println("[Decode Error]: ", err)
@@ -96,7 +96,7 @@ func (f *Files) Files(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req []putRequest
+	var req []PutRequest
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&req); err != nil {
 		log.Fatal(err)
@@ -112,7 +112,7 @@ func (f *Files) Files(w http.ResponseWriter, r *http.Request) {
 }
 
 func (f *Files) Bye(w http.ResponseWriter, r *http.Request) {
-	var breq byeRequest
+	var breq ByeRequest
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&breq); err != nil {
 		log.Fatal(err)

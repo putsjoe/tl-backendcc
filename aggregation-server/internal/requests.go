@@ -1,15 +1,15 @@
 package internal
 
-type helloRequest struct {
+type HelloRequest struct {
 	Instance string `json:"instance"`
 	Port     int    `json:"port"`
 }
 
-type byeRequest struct {
+type ByeRequest struct {
 	Instance string `json:"instance"`
 }
 
-type putRequest struct {
+type PutRequest struct {
 	Instance  string            `json:"instance"`
 	Operation string            `json:"op"`
 	Sequence  int               `json:"seqno"`

@@ -21,4 +21,3 @@ func main() {
 	log.Println("[INFO] Starting aggregator")
 	http.ListenAndServe(":"+strconv.Itoa(*port), nil)
 }
-
