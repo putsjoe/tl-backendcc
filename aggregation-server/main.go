@@ -56,6 +56,15 @@ func (f *files) add(instance string, filename string) {
 	f.state[instance].filenames[filename] = true
 }
 
+func (f *files) insert(hreq helloRequest) {
+	if _, ok := f.state[hreq.Instance]; !ok {
+		f.state[hreq.Instance] = fileDetails{
+			filenames: make(map[string]bool),
+			port:      hreq.Port,
+		}
+	}
+}
+
 func (f *files) hello(w http.ResponseWriter, r *http.Request) {
 
 	var hreq helloRequest
@@ -63,13 +72,8 @@ func (f *files) hello(w http.ResponseWriter, r *http.Request) {
 	if err := decoder.Decode(&hreq); err != nil {
 		log.Fatal(err)
 	}
-	if _, ok := f.state[hreq.Instance]; !ok {
-		f.state[hreq.Instance] = fileDetails{
-			filenames: make(map[string]bool),
-			port:      hreq.Port,
-		}
-		// Retrieve current list from server here
-	}
+	f.insert(hreq)
+	// Retrieve current list from server here
 
 }
 
@@ -89,16 +93,23 @@ func (f *files) bye(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func (f *files) prepFiles() []byte {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	jr := map[string][]map[string]string{"files": make([]map[string]string, 0)}
+	for i := range f.state {
+		for f := range f.state[i].filenames {
+			a := map[string]string{"filename": f}
+			jr["files"] = append(jr["files"], a)
+		}
+	}
+	js, _ := json.Marshal(jr)
+	return js
+}
+
 func (f *files) files(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
-		jr := map[string][]map[string]string{"files": make([]map[string]string, 0)}
-		for i := range f.state {
-			for f := range f.state[i].filenames {
-				a := map[string]string{"filename": f}
-				jr["files"] = append(jr["files"], a)
-			}
-		}
-		js, _ := json.Marshal(jr)
+		js := f.prepFiles()
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(js)
 		return
@@ -125,8 +136,9 @@ func (f *files) files(w http.ResponseWriter, r *http.Request) {
 // Seperate out?
 
 /** Questions: **/
-// Overused mutex? RWMutex? Best alternative?
+// prepFiles - better solution and sorting
 // files function - Too short for switch statement?
+// Overused mutex? RWMutex? Best alternative?
 /*
 // var state = make(map[string]map[string]bool)
 Better to use this syntax or
