@@ -8,8 +8,13 @@ import (
 	"sync"
 )
 
+type fileDetails struct {
+	filenames map[string]bool
+	port      int
+}
+
 type files struct {
-	state map[string]map[string]bool
+	state map[string]fileDetails
 	mu    sync.Mutex
 }
 
@@ -30,7 +35,7 @@ type putRequest struct {
 }
 
 func main() {
-	f := &files{state: make(map[string]map[string]bool)}
+	f := &files{state: make(map[string]fileDetails)}
 	http.HandleFunc("/hello", f.hello)
 	http.HandleFunc("/bye", f.bye)
 	http.HandleFunc("/files", f.files)
@@ -42,14 +47,13 @@ func main() {
 func (f *files) remove(instance string, filename string) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	delete(f.state[instance], filename)
-
+	delete(f.state[instance].filenames, filename)
 }
 
 func (f *files) add(instance string, filename string) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	f.state[instance][filename] = true
+	f.state[instance].filenames[filename] = true
 }
 
 func (f *files) hello(w http.ResponseWriter, r *http.Request) {
@@ -60,7 +64,10 @@ func (f *files) hello(w http.ResponseWriter, r *http.Request) {
 		log.Fatal(err)
 	}
 	if _, ok := f.state[hreq.Instance]; !ok {
-		f.state[hreq.Instance] = make(map[string]bool)
+		f.state[hreq.Instance] = fileDetails{
+			filenames: make(map[string]bool),
+			port:      hreq.Port,
+		}
 	}
 
 }
@@ -93,7 +100,7 @@ func (f *files) files(w http.ResponseWriter, r *http.Request) {
 		// fmt.Fprint(w, json.Marshal(files))
 		// fmt.Println(f.state)
 		for i := range f.state {
-			for f := range f.state[i] {
+			for f := range f.state[i].filenames {
 				fmt.Fprintf(w, f+"\n")
 			}
 		}
@@ -116,11 +123,11 @@ func (f *files) files(w http.ResponseWriter, r *http.Request) {
 }
 
 // TODO
-// Proper JSON response for files GET endpoint
+// Add in the port to a struct within the state variable?
+// Proper JSON response for files GET endpoint (Not easy actually)
 // Need to check for files currently present when the watcher first says hello
-// Storing the port too, struct in state?
-// Move to seperate file?
-// files output need to be ordered?
+// Seperate out?
+// files output need to be ordered? Check spec
 
 /** Questions: **/
 // Overused mutex? RWMutex? Best alternative?
@@ -139,4 +146,11 @@ pkill -f watcher-node
 2020/08/20 22:33:13 http: Server closed
 2020/08/20 22:33:13 http: Server closed
 joe@joe:~/thirdlight-bcc$ 2020/08/20 22:33:13 [ERROR] <nil>
+*/
+
+/** References **
+https://www.alexedwards.net/blog/understanding-mutexes
+https://golang.org/doc/articles/race_detector.html
+https://golang.org/doc/effective_go.html#maps
+https://gobyexample.com/
 */
