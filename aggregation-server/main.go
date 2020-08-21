@@ -68,6 +68,7 @@ func (f *files) hello(w http.ResponseWriter, r *http.Request) {
 			filenames: make(map[string]bool),
 			port:      hreq.Port,
 		}
+		// Retrieve current list from server here
 	}
 
 }
@@ -90,20 +91,16 @@ func (f *files) bye(w http.ResponseWriter, r *http.Request) {
 
 func (f *files) files(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
-		// var files = map[string]string{}
-		// for i := range f.state {
-		//      for f := range f.state[i] {
-		//              files[]
-		//              files = append(files, f)
-		//      }
-		// }
-		// fmt.Fprint(w, json.Marshal(files))
-		// fmt.Println(f.state)
+		jr := map[string][]map[string]string{"files": make([]map[string]string, 0)}
 		for i := range f.state {
 			for f := range f.state[i].filenames {
-				fmt.Fprintf(w, f+"\n")
+				a := map[string]string{"filename": f}
+				jr["files"] = append(jr["files"], a)
 			}
 		}
+		js, _ := json.Marshal(jr)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(js)
 		return
 	}
 
@@ -123,11 +120,9 @@ func (f *files) files(w http.ResponseWriter, r *http.Request) {
 }
 
 // TODO
-// Add in the port to a struct within the state variable?
-// Proper JSON response for files GET endpoint (Not easy actually)
-// Need to check for files currently present when the watcher first says hello
+// Need to check for files currently present when the watcher first says hello?
+// files output need to be ordered? Yes - sorted alphabetically
 // Seperate out?
-// files output need to be ordered? Check spec
 
 /** Questions: **/
 // Overused mutex? RWMutex? Best alternative?
@@ -153,4 +148,5 @@ https://www.alexedwards.net/blog/understanding-mutexes
 https://golang.org/doc/articles/race_detector.html
 https://golang.org/doc/effective_go.html#maps
 https://gobyexample.com/
+https://play.golang.org/p/Y7gn8_0cKJm
 */
