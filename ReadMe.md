@@ -92,13 +92,13 @@ To pass a different aggregator address, you can call:
 You do not have to support this via the makefile at all; if you find it convenient you may either add it as a new make target or extend the existing run/stop definitions. This is completely up to you, and is not being assessed.
 
 #### Improvements
+- Sorting of filenames returned
 - Layout of code
 - Tests
-- Sorting of filenames returned
+- Comments
 - hello function concurrency
 - Data races - stateful goroutines?
-- Alternative to mutex
-
+- Alternative to mutex. https://golang.org/pkg/sync/#Map
 #### Questions
 - prepFiles - better solution and sorting.
 - files function - Too short for switch statement?
