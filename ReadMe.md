@@ -99,6 +99,8 @@ You do not have to support this via the makefile at all; if you find it convenie
 - hello function concurrency
 - Data races - stateful goroutines?
 - Alternative to mutex. https://golang.org/pkg/sync/#Map
+- In the get request to instance, handle error by removing the instance from state as possibly offline.
+
 #### Questions
 - prepFiles - better solution and sorting.
 - files function - Too short for switch statement?
