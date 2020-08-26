@@ -3,6 +3,7 @@ package internal
 import (
 	"encoding/json"
 	"log"
+	"net"
 	"net/http"
 	"sort"
 	"strconv"
@@ -16,6 +17,7 @@ const (
 
 type InstanceInfo struct {
 	Filenames map[string]bool
+	URL       string
 	Port      int
 }
 
@@ -40,12 +42,13 @@ func (f *State) addFile(instance string, filename string) {
 	f.Instances[instance].Filenames[filename] = true
 }
 
-func (f *State) addInstance(hreq HelloOperation) bool {
+func (f *State) addInstance(hreq HelloOperation, url string) bool {
 	f.Mu.Lock()
 	defer f.Mu.Unlock()
 	if _, ok := f.Instances[hreq.Instance]; !ok {
 		f.Instances[hreq.Instance] = InstanceInfo{
 			Filenames: make(map[string]bool),
+			URL:       url,
 			Port:      int(hreq.Port),
 		}
 		return true
@@ -89,11 +92,16 @@ func (f *State) Hello(w http.ResponseWriter, r *http.Request) {
 	if err := decoder.Decode(&hreq); err != nil {
 		log.Println("[Decode Error]: ", err)
 	}
-	if !f.addInstance(hreq) {
+	if !f.addInstance(hreq, r.RemoteAddr) {
 		return
 	}
-	// If instance is new, then return list of current files from server
-	location := "http://localhost:" + strconv.FormatUint(uint64(hreq.Port), 10) + "/files"
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		log.Printf("splitHost: %v", err)
+	}
+
+	// Not sure this is right but getting an error just using r.RemoteAddr
+	location := "http://" + host + ":" + strconv.FormatUint(uint64(hreq.Port), 10) + "/files"
 	resp, err := http.Get(location)
 	if err != nil {
 		log.Println("["+location+"/files GET]: ", err)
