@@ -95,10 +95,10 @@ func (f *State) Hello(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 
-	var result map[string][]map[string]string
+	var result FilesResponse
 	json.NewDecoder(resp.Body).Decode(&result)
-	for _, r := range result["files"] {
-		f.addFile(hreq.Instance, r["filename"])
+	for _, r := range result.Files {
+		f.addFile(hreq.Instance, r.Filename)
 	}
 
 }
