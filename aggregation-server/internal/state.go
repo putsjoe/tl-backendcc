@@ -9,6 +9,11 @@ import (
 	"sync"
 )
 
+const (
+	add    = "add"
+	remove = "remove"
+)
+
 type InstanceInfo struct {
 	Filenames map[string]bool
 	Port      int
@@ -118,9 +123,9 @@ func (f *State) Files(w http.ResponseWriter, r *http.Request) {
 	}
 	for _, p := range req {
 		switch p.Op {
-		case "add":
+		case add:
 			f.addFile(p.Instance, p.Value.Filename)
-		case "remove":
+		case remove:
 			f.removeFile(p.Instance, p.Value.Filename)
 		}
 	}
