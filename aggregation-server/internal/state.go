@@ -40,14 +40,15 @@ func (f *State) addInstance(hreq HelloOperation) bool {
 		}
 		return true
 	}
-	// Return if the instance is new
 	return false
 }
 
 func (f *State) removeInstance(instance string) {
 	f.Mu.Lock()
 	defer f.Mu.Unlock()
-	delete(f.Instances, instance)
+	if _, ok := f.Instances[instance]; ok {
+		delete(f.Instances, instance)
+	}
 }
 
 func (f *State) prepFiles() []byte {
