@@ -1,10 +1,10 @@
-# Third Light Backend Coding Challenge
+# Go Backend Coding Challenge
 
 ## Purpose
 
 The purpose of this exercise is to produce a body of work that can be evaluated, reviewed and discussed as a practical part of our job interview process.
 
-The code will be compiled, evaluated and code reviewed by members of the Third Light development team before the interview and a semi-formal code review will make-up at least part of the first interview.
+The code will be compiled, evaluated and code reviewed by members of the development team before the interview and a semi-formal code review will make-up at least part of the first interview.
 
 While the goal of the exercise is to have a fairly substantial piece of code to evaluate and discuss in an interview, the task itself is intended to show your ability to build a microservice, so we will be looking at how you structure your code, incorporating things like logging, configuration and error handling.
 
