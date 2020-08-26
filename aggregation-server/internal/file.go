@@ -8,31 +8,31 @@ import (
 	"sync"
 )
 
-type FileDetails struct {
+type InstanceInfo struct {
 	Filenames map[string]bool
 	Port      int
 }
 
-type Files struct {
-	State map[string]FileDetails
-	Mu    sync.Mutex
+type State struct {
+	Instances map[string]InstanceInfo
+	Mu        sync.Mutex
 }
 
-func (f *Files) remove(instance string, filename string) {
+func (f *State) remove(instance string, filename string) {
 	f.Mu.Lock()
 	defer f.Mu.Unlock()
-	delete(f.State[instance].Filenames, filename)
+	delete(f.Instances[instance].Filenames, filename)
 }
 
-func (f *Files) add(instance string, filename string) {
+func (f *State) add(instance string, filename string) {
 	f.Mu.Lock()
 	defer f.Mu.Unlock()
-	f.State[instance].Filenames[filename] = true
+	f.Instances[instance].Filenames[filename] = true
 }
 
-func (f *Files) insert(hreq HelloRequest) bool {
-	if _, ok := f.State[hreq.Instance]; !ok {
-		f.State[hreq.Instance] = FileDetails{
+func (f *State) insert(hreq HelloRequest) bool {
+	if _, ok := f.Instances[hreq.Instance]; !ok {
+		f.Instances[hreq.Instance] = InstanceInfo{
 			Filenames: make(map[string]bool),
 			Port:      hreq.Port,
 		}
@@ -42,18 +42,18 @@ func (f *Files) insert(hreq HelloRequest) bool {
 	return false
 }
 
-func (f *Files) removeInstance(instance string) {
+func (f *State) removeInstance(instance string) {
 	f.Mu.Lock()
 	defer f.Mu.Unlock()
-	delete(f.State, instance)
+	delete(f.Instances, instance)
 }
 
-func (f *Files) prepFiles() []byte {
+func (f *State) prepFiles() []byte {
 	f.Mu.Lock()
 	defer f.Mu.Unlock()
 	jr := map[string][]map[string]string{"files": make([]map[string]string, 0)}
-	for i := range f.State {
-		for f := range f.State[i].Filenames {
+	for i := range f.Instances {
+		for f := range f.Instances[i].Filenames {
 			a := map[string]string{"filename": f}
 			jr["files"] = append(jr["files"], a)
 		}
@@ -62,7 +62,7 @@ func (f *Files) prepFiles() []byte {
 	return js
 }
 
-func (f *Files) Hello(w http.ResponseWriter, r *http.Request) {
+func (f *State) Hello(w http.ResponseWriter, r *http.Request) {
 
 	var hreq HelloRequest
 	decoder := json.NewDecoder(r.Body)
@@ -88,7 +88,7 @@ func (f *Files) Hello(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (f *Files) Files(w http.ResponseWriter, r *http.Request) {
+func (f *State) Files(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		js := f.prepFiles()
 		w.Header().Set("Content-Type", "application/json")
@@ -111,7 +111,7 @@ func (f *Files) Files(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (f *Files) Bye(w http.ResponseWriter, r *http.Request) {
+func (f *State) Bye(w http.ResponseWriter, r *http.Request) {
 	var breq ByeRequest
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&breq); err != nil {

@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	f := &internal.Files{State: make(map[string]internal.FileDetails)}
+	f := &internal.State{Instances: make(map[string]internal.InstanceInfo)}
 	http.HandleFunc("/hello", f.Hello)
 	http.HandleFunc("/bye", f.Bye)
 	http.HandleFunc("/files", f.Files)
