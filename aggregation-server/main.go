@@ -19,5 +19,7 @@ func main() {
 	http.HandleFunc("/files", f.Files)
 
 	log.Println("[INFO] Starting aggregator")
-	http.ListenAndServe(":"+strconv.Itoa(*port), nil)
+
+	log.Fatal(http.ListenAndServe(":"+strconv.Itoa(*port), nil))
+
 }
