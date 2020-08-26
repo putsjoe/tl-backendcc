@@ -91,4 +91,31 @@ To pass a different aggregator address, you can call:
 ### Adding your aggregation server
 You do not have to support this via the makefile at all; if you find it convenient you may either add it as a new make target or extend the existing run/stop definitions. This is completely up to you, and is not being assessed.
 
+#### Improvements
+- Sorting of filenames returned
+- Layout of code
+- Tests
+- Comments
+- hello function concurrency
+- Data races - stateful goroutines?
+- Alternative to mutex. https://golang.org/pkg/sync/#Map
+- In the get request to instance, handle error by removing the instance from state as possibly offline.
 
+#### Questions
+- prepFiles - better solution and sorting.
+- files function - Too short for switch statement?
+- Overused mutex? RWMutex? Best alternative?
+- Which is the better syntax:
+```
+  var state = make(map[string]map[string]bool)
+  var state = map[string]map[string]bool{}
+```
+- Using the mutex right at the top can just block the whole thing on a http
+	handler function. I thought the goroutine would wait not just drop.
+
+#### References
+https://www.alexedwards.net/blog/understanding-mutexes
+https://golang.org/doc/articles/race_detector.html
+https://golang.org/doc/effective_go.html#maps
+https://gobyexample.com/
+https://play.golang.org/p/Y7gn8_0cKJm
