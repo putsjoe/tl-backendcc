@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"sort"
 	"strconv"
 	"sync"
 )
@@ -59,17 +60,21 @@ func (f *State) prepResponse() FilesResponse {
 	f.Mu.Lock()
 	defer f.Mu.Unlock()
 
-	fr := FilesResponse{
-		Files: make([]FileMetadata, 0),
-	}
+	fr := make([]FileMetadata, 0)
+	us := make([]string, 0)
 
 	for i := range f.Instances {
 		for f := range f.Instances[i].Filenames {
-			fr.Files = append(fr.Files, FileMetadata{f})
+			us = append(us, f)
 		}
 	}
 
-	return fr
+	sort.Strings(us)
+	for _, s := range us {
+		fr = append(fr, FileMetadata{s})
+	}
+
+	return FilesResponse{Files: fr}
 }
 
 func (f *State) Hello(w http.ResponseWriter, r *http.Request) {
