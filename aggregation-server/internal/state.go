@@ -18,19 +18,21 @@ type State struct {
 	Mu        sync.Mutex
 }
 
-func (f *State) remove(instance string, filename string) {
+func (f *State) removeFile(instance string, filename string) {
 	f.Mu.Lock()
 	defer f.Mu.Unlock()
 	delete(f.Instances[instance].Filenames, filename)
 }
 
-func (f *State) add(instance string, filename string) {
+func (f *State) addFile(instance string, filename string) {
 	f.Mu.Lock()
 	defer f.Mu.Unlock()
 	f.Instances[instance].Filenames[filename] = true
 }
 
-func (f *State) insert(hreq HelloOperation) bool {
+func (f *State) addInstance(hreq HelloOperation) bool {
+	f.Mu.Lock()
+	defer f.Mu.Unlock()
 	if _, ok := f.Instances[hreq.Instance]; !ok {
 		f.Instances[hreq.Instance] = InstanceInfo{
 			Filenames: make(map[string]bool),
@@ -69,7 +71,7 @@ func (f *State) Hello(w http.ResponseWriter, r *http.Request) {
 	if err := decoder.Decode(&hreq); err != nil {
 		log.Println("[Decode Error]: ", err)
 	}
-	if !f.insert(hreq) {
+	if !f.addInstance(hreq) {
 		return
 	}
 	// If instance is new, then return list of current files from server
@@ -83,7 +85,7 @@ func (f *State) Hello(w http.ResponseWriter, r *http.Request) {
 	var result map[string][]map[string]string
 	json.NewDecoder(resp.Body).Decode(&result)
 	for _, r := range result["files"] {
-		f.add(hreq.Instance, r["filename"])
+		f.addFile(hreq.Instance, r["filename"])
 	}
 
 }
@@ -104,9 +106,9 @@ func (f *State) Files(w http.ResponseWriter, r *http.Request) {
 	for _, p := range req {
 		switch p.Op {
 		case "add":
-			f.add(p.Instance, p.Value.Filename)
+			f.addFile(p.Instance, p.Value.Filename)
 		case "remove":
-			f.remove(p.Instance, p.Value.Filename)
+			f.removeFile(p.Instance, p.Value.Filename)
 		}
 	}
 }
