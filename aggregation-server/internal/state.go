@@ -8,6 +8,8 @@ import (
 	"sort"
 	"strconv"
 	"sync"
+
+	"thirdlight.com/watcher-node/lib"
 )
 
 const (
@@ -27,7 +29,7 @@ type State struct {
 }
 
 type FilesResponse struct {
-	Files []FileMetadata `json:"files"`
+	Files []lib.FileMetadata `json:"files"`
 }
 
 func (f *State) removeFile(instance string, filename string) {
@@ -42,7 +44,7 @@ func (f *State) addFile(instance string, filename string) {
 	f.Instances[instance].Filenames[filename] = true
 }
 
-func (f *State) addInstance(hreq HelloOperation, url string) bool {
+func (f *State) addInstance(hreq lib.HelloOperation, url string) bool {
 	f.Mu.Lock()
 	defer f.Mu.Unlock()
 	if _, ok := f.Instances[hreq.Instance]; !ok {
@@ -68,7 +70,7 @@ func (f *State) prepResponse() FilesResponse {
 	f.Mu.Lock()
 	defer f.Mu.Unlock()
 
-	fr := make([]FileMetadata, 0)
+	fr := make([]lib.FileMetadata, 0)
 	us := make([]string, 0)
 
 	for i := range f.Instances {
@@ -79,7 +81,7 @@ func (f *State) prepResponse() FilesResponse {
 
 	sort.Strings(us)
 	for _, s := range us {
-		fr = append(fr, FileMetadata{s})
+		fr = append(fr, lib.FileMetadata{s})
 	}
 
 	return FilesResponse{Files: fr}
@@ -87,7 +89,7 @@ func (f *State) prepResponse() FilesResponse {
 
 func (f *State) Hello(w http.ResponseWriter, r *http.Request) {
 
-	var hreq HelloOperation
+	var hreq lib.HelloOperation
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&hreq); err != nil {
 		log.Println("[Decode Error]: ", err)
@@ -124,7 +126,7 @@ func (f *State) Files(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req []PatchOperation
+	var req []lib.PatchOperation
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&req); err != nil {
 		log.Fatal(err)
@@ -140,7 +142,7 @@ func (f *State) Files(w http.ResponseWriter, r *http.Request) {
 }
 
 func (f *State) Bye(w http.ResponseWriter, r *http.Request) {
-	var breq ByeOperation
+	var breq lib.ByeOperation
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&breq); err != nil {
 		log.Fatal(err)
