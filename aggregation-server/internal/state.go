@@ -18,6 +18,10 @@ type State struct {
 	Mu        sync.Mutex
 }
 
+type FilesResponse struct {
+	Files []FileMetadata `json:"files"`
+}
+
 func (f *State) removeFile(instance string, filename string) {
 	f.Mu.Lock()
 	defer f.Mu.Unlock()
@@ -51,18 +55,21 @@ func (f *State) removeInstance(instance string) {
 	}
 }
 
-func (f *State) prepFiles() []byte {
+func (f *State) prepResponse() FilesResponse {
 	f.Mu.Lock()
 	defer f.Mu.Unlock()
-	jr := map[string][]map[string]string{"files": make([]map[string]string, 0)}
+
+	fr := FilesResponse{
+		Files: make([]FileMetadata, 0),
+	}
+
 	for i := range f.Instances {
 		for f := range f.Instances[i].Filenames {
-			a := map[string]string{"filename": f}
-			jr["files"] = append(jr["files"], a)
+			fr.Files = append(fr.Files, FileMetadata{f})
 		}
 	}
-	js, _ := json.Marshal(jr)
-	return js
+
+	return fr
 }
 
 func (f *State) Hello(w http.ResponseWriter, r *http.Request) {
@@ -93,9 +100,9 @@ func (f *State) Hello(w http.ResponseWriter, r *http.Request) {
 
 func (f *State) Files(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
-		js := f.prepFiles()
+		js := f.prepResponse()
 		w.Header().Set("Content-Type", "application/json")
-		w.Write(js)
+		json.NewEncoder(w).Encode(js)
 		return
 	}
 
